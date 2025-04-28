@@ -16,7 +16,7 @@ load_dotenv()
 NOTION_DATABASE_ID = os.getenv("NOTION_DATABASE_ID")
 NOTION_API_KEY = os.getenv("NOTION_API_KEY")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-SENT_IDS_FILE = "id_sent.json"
+SENT_IDS_FILE = "id.json"
 
 def get_notion_data():
     url = f"https://api.notion.com/v1/databases/{NOTION_DATABASE_ID}/query"
@@ -141,6 +141,8 @@ def main():
             send_to_telegram(tele_id, message)
             sent_ids.append(item_id)
             save_sent_ids(sent_ids)
+            
+    sys.exit(0) # Exit dengan sukses
 
 if __name__ == "__main__":
     main()
