@@ -4,6 +4,7 @@ import os
 from dotenv import load_dotenv
 from datetime import datetime
 import logging
+import sys
 
 # Konfigurasi logging
 logging.basicConfig(level=logging.INFO)
