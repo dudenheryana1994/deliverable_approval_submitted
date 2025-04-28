@@ -2,7 +2,7 @@ name: Run Notion to Telegram Service Cron
 
 on:
   schedule:
-    - cron: '*/2 * * * *'
+    - cron: '*/2 * * * *'  # Setiap 2 menit
   workflow_dispatch:
 
 jobs:
@@ -24,7 +24,7 @@ jobs:
         pip install -r requirements.txt
         pip install python-dotenv
 
-    - name: Download id_sent.json artifact
+    - name: Download id_sent.json artifact (if exists)
       uses: actions/download-artifact@v4
       with:
         name: id_sent
