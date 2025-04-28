@@ -2,7 +2,7 @@ name: Run Notion to Telegram Service Cron
 
 on:
   schedule:
-    - cron: '*/2 * * * *'  # Setiap 2 menit
+    - cron: '*/2 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -29,6 +29,7 @@ jobs:
       with:
         name: id_sent
         path: .
+      continue-on-error: true
 
     - name: Create id_sent.json if not exist
       run: |
