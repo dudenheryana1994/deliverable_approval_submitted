@@ -24,6 +24,12 @@ jobs:
         pip install -r requirements.txt
         pip install python-dotenv
 
+    - name: Download id_sent.json artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: id_sent
+        path: .
+
     - name: Create id_sent.json if not exist
       run: |
         if [ ! -f id_sent.json ]; then echo "[]" > id_sent.json; fi
@@ -37,3 +43,9 @@ jobs:
     - name: Jalankan script Python
       run: |
         python notion_to_telegram.py
+
+    - name: Upload id_sent.json sebagai artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: id_sent
+        path: id_sent.json
