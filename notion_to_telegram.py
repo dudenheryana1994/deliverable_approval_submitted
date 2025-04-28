@@ -86,6 +86,24 @@ def extract_date(prop):
                 return dt.strftime("%d/%m/%Y %H:%M")
     return "Tidak ada data"
 
+def add_to_sent_ids(new_id):
+    # Membaca file id_sent.json
+    if os.path.exists(SENT_IDS_FILE):
+        with open(SENT_IDS_FILE, "r") as f:
+            sent_ids = json.load(f)
+    else:
+        sent_ids = []
+
+    # Menambahkan ID baru jika belum ada
+    if new_id not in sent_ids:
+        sent_ids.append(new_id)
+        # Menyimpan kembali perubahan ke file
+        with open(SENT_IDS_FILE, "w") as f:
+            json.dump(sent_ids, f, indent=4)
+        logger.info(f"Added ID {new_id} to id_sent.json")
+    else:
+        logger.info(f"ID {new_id} already exists in id_sent.json")
+
 def main():
     notion_data = get_notion_data()
     if not notion_data:
@@ -129,8 +147,7 @@ def main():
             )
             logger.info(f"Sending message for item ID: {item_id}")
             send_to_telegram(tele_id, message)
-            sent_ids.append(item_id)
-            save_sent_ids(sent_ids)
+            add_to_sent_ids(item_id)
 
     logger.info("Processing completed.")
     sys.exit(0)
