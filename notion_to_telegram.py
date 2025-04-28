@@ -9,9 +9,9 @@ import sys
 # Konfigurasi logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-logger.debug("Starting script at " + datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+logger.info("Starting script at " + datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
-# Muat variabel lingkungan dari file .env
+# Load environment variables
 load_dotenv()
 
 NOTION_DATABASE_ID = os.getenv("NOTION_DATABASE_ID")
@@ -45,7 +45,6 @@ def send_to_telegram(chat_id, message):
         response = requests.post(url, json=payload)
         response.raise_for_status()
         logger.info(f"Message sent to Telegram ID {chat_id}")
-        logger.debug(f"Telegram response: {response.text}")
     except requests.exceptions.RequestException as e:
         logger.error(f"Error sending message to {chat_id}: {e}")
 
@@ -60,17 +59,13 @@ def save_sent_ids(sent_ids):
         json.dump(sent_ids, f, indent=4)
 
 def extract_text(prop_list, default="Tidak ada data"):
-    """Ambil isi teks dari rich_text atau title"""
     if isinstance(prop_list, list) and prop_list:
         return prop_list[0].get("plain_text", default)
     return default
 
 def extract_formula(prop):
-    """Ambil isi dari formula"""
     if isinstance(prop, dict):
         formula_result = prop.get("formula", {})
-        logger.debug(f"Formula result: {json.dumps(formula_result)}")
-        
         if "string" in formula_result:
             return formula_result["string"]
         elif "number" in formula_result:
@@ -82,7 +77,6 @@ def extract_formula(prop):
     return "Tidak ada data"
 
 def extract_date(prop):
-    """Ambil tanggal dari properti type date dan format ke 'DD/MM/YYYY HH:MM'"""
     if isinstance(prop, dict):
         date_value = prop.get("date")
         if isinstance(date_value, dict):
@@ -95,11 +89,12 @@ def extract_date(prop):
 def main():
     notion_data = get_notion_data()
     if not notion_data:
-        sys.exit(1)
+        logger.info("No data returned from Notion.")
+        sys.exit(0)
 
     results = notion_data.get("results", [])
     if not results:
-        logger.info("No data found.")
+        logger.info("No data found in Notion database.")
         sys.exit(0)
 
     sent_ids = read_sent_ids()
@@ -108,22 +103,16 @@ def main():
         item_id = item.get("id")
         properties = item.get("properties", {})
 
-        # Ambil data dari properti
         activities_name = extract_text(properties.get("Activities Name", {}).get("title", []))
         deliverable_name = extract_text(properties.get("Deliverable Name", {}).get("rich_text", []))
         link_activities = extract_formula(properties.get("Link Activities", {}))
         link_approval = extract_formula(properties.get("Link Approval", {}))
-        # Properti tambahan
         project_name = extract_text(properties.get("Project Name", {}).get("rich_text", []), default="-")
         work_package_name = extract_text(properties.get("Work Package Name", {}).get("rich_text", []))
         id_activities = extract_text(properties.get("ID Activities", {}).get("rich_text", []))
         uploader_name = extract_text(properties.get("Uploader.Name (As)", {}).get("rich_text", []))
         upload_date = extract_date(properties.get("Upload.Date", {}))
-
-        # Ambil Tele ID
         tele_id = extract_text(properties.get("ID Telegram (Us)", {}).get("rich_text", []))
-
-        logger.debug(f"Tele ID for item {item_id}: {tele_id}")
 
         if item_id not in sent_ids and tele_id not in [None, "", "Tidak ada data"]:
             message = (
@@ -138,12 +127,13 @@ def main():
                 f"📎 *Link Informasi Activity:* {link_activities}\n"
                 f"📎 *Link Form Approval:* {link_approval}\n"
             )
-            logger.debug(f"Sending message: {message}")
+            logger.info(f"Sending message for item ID: {item_id}")
             send_to_telegram(tele_id, message)
             sent_ids.append(item_id)
             save_sent_ids(sent_ids)
-            
-    sys.exit(0) # Exit dengan sukses
+
+    logger.info("Processing completed.")
+    sys.exit(0)
 
 if __name__ == "__main__":
     main()
