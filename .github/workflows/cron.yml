@@ -13,12 +13,6 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Download id_sent.json artifact (jika ada)
-      uses: actions/download-artifact@v3
-      with:
-        name: id_sent
-      continue-on-error: true
-
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -43,9 +37,3 @@ jobs:
     - name: Jalankan script Python
       run: |
         python notion_to_telegram.py
-
-    - name: Upload id_sent.json ke artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: id_sent
-        path: id_sent.json
