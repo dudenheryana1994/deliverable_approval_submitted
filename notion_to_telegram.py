@@ -16,7 +16,7 @@ load_dotenv()
 NOTION_DATABASE_ID = os.getenv("NOTION_DATABASE_ID")
 NOTION_API_KEY = os.getenv("NOTION_API_KEY")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-SENT_IDS_FILE = "id.json"
+SENT_IDS_FILE = "id_sent.json"
 
 def get_notion_data():
     url = f"https://api.notion.com/v1/databases/{NOTION_DATABASE_ID}/query"
