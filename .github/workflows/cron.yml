@@ -2,7 +2,7 @@ name: Run Notion to Telegram Service Cron
 
 on:
   schedule:
-    - cron: '*/3 * * * *'  # Setiap 3 menit
+    - cron: '*/2 * * * *'  # Setiap 2 menit
   workflow_dispatch:
 
 jobs:
@@ -12,6 +12,13 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+
+    - name: Restore id.json cache
+      uses: actions/cache@v3
+      with:
+        path: id_sent.json
+        key: id-json-cache
+        restore-keys: id-json-cache
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -24,16 +31,22 @@ jobs:
         pip install -r requirements.txt
         pip install python-dotenv
 
+    - name: Create id.json if not exist
+      run: |
+        if [ ! -f id_sent.json ]; then echo "[]" > id_sent.json; fi
+
     - name: Buat file .env dari secret
       env:
         ENV_VARS: ${{ secrets.env }}
       run: |
         echo "$ENV_VARS" > .env
 
-    - name: Setup id.json file
-      run: |
-        echo "${{ secrets.ID_JSON }}" > id.json
-
     - name: Jalankan script Python
       run: |
         python notion_to_telegram.py
+
+    - name: Save id.json cache
+      uses: actions/cache@v3
+      with:
+        path: id.json
+        key: id-json-cache
