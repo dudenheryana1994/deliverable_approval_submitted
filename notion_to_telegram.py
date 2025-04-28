@@ -94,12 +94,12 @@ def extract_date(prop):
 def main():
     notion_data = get_notion_data()
     if not notion_data:
-        return
+        sys.exit(1)
 
     results = notion_data.get("results", [])
     if not results:
         logger.info("No data found.")
-        return
+        sys.exit(0)
 
     sent_ids = read_sent_ids()
 
