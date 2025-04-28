@@ -13,12 +13,11 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Restore id.json cache
-      uses: actions/cache@v3
+    - name: Download id_sent.json artifact (jika ada)
+      uses: actions/download-artifact@v3
       with:
-        path: id_sent.json
-        key: id-json-cache
-        restore-keys: id-json-cache
+        name: id_sent
+      continue-on-error: true
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -31,11 +30,11 @@ jobs:
         pip install -r requirements.txt
         pip install python-dotenv
 
-    - name: Create id.json if not exist
+    - name: Create id_sent.json if not exist
       run: |
         if [ ! -f id_sent.json ]; then echo "[]" > id_sent.json; fi
 
-    - name: Buat file .env dari secret
+    - name: Buat file .env dari GitHub Secrets
       env:
         ENV_VARS: ${{ secrets.env }}
       run: |
@@ -45,8 +44,8 @@ jobs:
       run: |
         python notion_to_telegram.py
 
-    - name: Save id.json cache
-      uses: actions/cache@v3
+    - name: Upload id_sent.json ke artifact
+      uses: actions/upload-artifact@v3
       with:
-        path: id.json
-        key: id-json-cache
+        name: id_sent
+        path: id_sent.json
