@@ -24,17 +24,6 @@ jobs:
         pip install -r requirements.txt
         pip install python-dotenv
 
-    - name: Create id_sent.json if not exist
-      run: |
-        if [ ! -f id_sent.json ]; then echo "[]" > id_sent.json; fi
-
-    - name: Download id_sent.json artifact (if exists)
-      uses: actions/download-artifact@v4
-      with:
-        name: id_sent
-        path: .
-      continue-on-error: true
-
     - name: Buat file .env dari GitHub Secrets
       env:
         ENV_VARS: ${{ secrets.env }}
@@ -45,8 +34,12 @@ jobs:
       run: |
         python notion_to_telegram.py
 
-    - name: Upload id_sent.json sebagai artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: id_sent
-        path: id_sent.json
+    - name: Commit and push updated id_sent.json
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add id_sent.json
+        git commit -m "Update id_sent.json [skip ci]" || echo "No changes to commit"
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
