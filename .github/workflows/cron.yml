@@ -2,8 +2,8 @@ name: Run Notion to Telegram Service Cron
 
 on:
   schedule:
-    - cron: '*/2 * * * *'  # Setiap 2 menit
-  workflow_dispatch:
+    - cron: '*/2 * * * *' # Setiap 2 menit jalan
+  workflow_dispatch: # Bisa juga manual jalanin
 
 jobs:
   run-python-script:
@@ -24,13 +24,24 @@ jobs:
         pip install -r requirements.txt
         pip install python-dotenv
 
-    - name: Buat file .env dari GitHub Secrets
+    - name: Create id_sent.json if not exist
+      run: |
+        if [ ! -f id_sent.json ]; then echo "[]" > id_sent.json; fi
+
+    - name: Download id_sent.json artifact (if exists)
+      uses: actions/download-artifact@v4
+      with:
+        name: id_sent
+        path: .
+      continue-on-error: true
+
+    - name: Create .env file from GitHub Secrets
       env:
         ENV_VARS: ${{ secrets.env }}
       run: |
         echo "$ENV_VARS" > .env
 
-    - name: Jalankan script Python
+    - name: Run Python script
       run: |
         python notion_to_telegram.py
 
@@ -38,8 +49,7 @@ jobs:
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
+        git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
         git add id_sent.json
         git commit -m "Update id_sent.json [skip ci]" || echo "No changes to commit"
         git push
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
