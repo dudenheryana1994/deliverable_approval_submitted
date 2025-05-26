@@ -2,8 +2,8 @@ name: Run Notion to Telegram Service Cron
 
 on:
   schedule:
-    - cron: '*/10 * * * *' # Setiap 2 menit jalan
-  workflow_dispatch: # Bisa juga manual jalanin
+    - cron: '*/2 * * * *' # Setiap 10 menit
+  workflow_dispatch: # Bisa dijalankan manual juga
 
 jobs:
   run-python-script:
@@ -28,13 +28,6 @@ jobs:
       run: |
         if [ ! -f id_sent.json ]; then echo "[]" > id_sent.json; fi
 
-    - name: Download id_sent.json artifact (if exists)
-      uses: actions/download-artifact@v4
-      with:
-        name: id_sent
-        path: .
-      continue-on-error: true
-
     - name: Create .env file from GitHub Secrets
       env:
         ENV_VARS: ${{ secrets.env }}
@@ -42,6 +35,10 @@ jobs:
         echo "$ENV_VARS" > .env
 
     - name: Run Python script
+      env:
+        NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+        NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       run: |
         python notion_to_telegram.py
 
