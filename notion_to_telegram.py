@@ -1,3 +1,5 @@
+Github submitted 
+
 import requests
 import json
 import os
@@ -7,11 +9,7 @@ import logging
 import sys
 
 # Konfigurasi logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[logging.StreamHandler()]
-)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.info("Starting script at " + datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
@@ -22,11 +20,6 @@ NOTION_DATABASE_ID = os.getenv("NOTION_DATABASE_ID")
 NOTION_API_KEY = os.getenv("NOTION_API_KEY")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 SENT_IDS_FILE = "id_sent.json"
-
-def add_dashes_to_uuid(uuid_str):
-    if uuid_str and len(uuid_str) == 32 and "-" not in uuid_str:
-        return f"{uuid_str[0:8]}-{uuid_str[8:12]}-{uuid_str[12:16]}-{uuid_str[16:20]}-{uuid_str[20:]}"
-    return uuid_str
 
 def get_notion_data():
     url = f"https://api.notion.com/v1/databases/{NOTION_DATABASE_ID}/query"
@@ -53,17 +46,14 @@ def send_to_telegram(chat_id, message):
     try:
         response = requests.post(url, json=payload)
         response.raise_for_status()
-        logger.info(f"✅ Message sent to Telegram ID {chat_id}")
-        return True
+        logger.info(f"Message sent to Telegram ID {chat_id}")
     except requests.exceptions.RequestException as e:
-        logger.error(f"❌ Failed to send message to {chat_id}: {e}")
-        return False
+        logger.error(f"Error sending message to {chat_id}: {e}")
 
 def read_sent_ids():
     if os.path.exists(SENT_IDS_FILE):
         with open(SENT_IDS_FILE, "r") as f:
-            raw_ids = json.load(f)
-            return [add_dashes_to_uuid(id_str.replace("-", "")) for id_str in raw_ids]
+            return json.load(f)
     return []
 
 def save_sent_ids(sent_ids):
@@ -99,41 +89,39 @@ def extract_date(prop):
     return "Tidak ada data"
 
 def add_to_sent_ids(new_id):
-    sent_ids = read_sent_ids()
+    # Membaca file id_sent.json
+    if os.path.exists(SENT_IDS_FILE):
+        with open(SENT_IDS_FILE, "r") as f:
+            sent_ids = json.load(f)
+    else:
+        sent_ids = []
+
+    # Menambahkan ID baru jika belum ada
     if new_id not in sent_ids:
         sent_ids.append(new_id)
-        save_sent_ids(sent_ids)
-        logger.info(f"🆗 Added ID {new_id} to id_sent.json")
+        # Menyimpan kembali perubahan ke file
+        with open(SENT_IDS_FILE, "w") as f:
+            json.dump(sent_ids, f, indent=4)
+        logger.info(f"Added ID {new_id} to id_sent.json")
     else:
-        logger.info(f"⚠️ ID {new_id} already exists in id_sent.json")
+        logger.info(f"ID {new_id} already exists in id_sent.json")
 
 def main():
     notion_data = get_notion_data()
     if not notion_data:
-        logger.warning("No data returned from Notion.")
+        logger.info("No data returned from Notion.")
         sys.exit(0)
 
     results = notion_data.get("results", [])
     if not results:
-        logger.warning("No data found in Notion database.")
+        logger.info("No data found in Notion database.")
         sys.exit(0)
 
     sent_ids = read_sent_ids()
 
     for item in results:
+        item_id = item.get("id")
         properties = item.get("properties", {})
-
-        id_raw = extract_text(properties.get("ID Kirim Deliverable", {}).get("rich_text", []))
-        id_kirim_deliverable = add_dashes_to_uuid(id_raw)
-        tele_id = extract_text(properties.get("ID Telegram (Us)", {}).get("rich_text", []))
-
-        if not tele_id or tele_id == "Tidak ada data":
-            logger.warning(f"⚠️ Tele ID kosong untuk ID Deliverable {id_kirim_deliverable}, dilewati.")
-            continue
-
-        if id_kirim_deliverable in sent_ids:
-            logger.info(f"🟡 ID {id_kirim_deliverable} sudah pernah dikirim, dilewati.")
-            continue
 
         activities_name = extract_text(properties.get("Activities Name", {}).get("title", []))
         deliverable_name = extract_text(properties.get("Deliverable Name", {}).get("rich_text", []))
@@ -144,29 +132,26 @@ def main():
         id_activities = extract_text(properties.get("ID Activities", {}).get("rich_text", []))
         uploader_name = extract_text(properties.get("Uploader.Name (As)", {}).get("rich_text", []))
         upload_date = extract_date(properties.get("Upload.Date", {}))
+        tele_id = extract_text(properties.get("ID Telegram (Us)", {}).get("rich_text", []))
 
-        message = (
-            f"*PERMINTAAN APPROVAL DELIVERABLE*\n\n"
-            f"📅 *Tanggal Upload:* {upload_date}\n"
-            f"✅ *Nama Deliverable:* {deliverable_name}\n"
-            f"📁 *Nama Project:* {project_name}\n"
-            f"📦 *Work Package:* {work_package_name}\n"
-            f"📄 *Nama Activity:* {activities_name}\n"
-            f"🆔 *ID Activity:* {id_activities}\n"
-            f"👤 *Diupload oleh:* {uploader_name}\n"
-            f"📎 *Link Informasi Activity:* {link_activities}\n"
-            f"📎 *Link Form Approval:* {link_approval}\n"
-        )
+        if item_id not in sent_ids and tele_id not in [None, "", "Tidak ada data"]:
+            message = (
+                f"*PERMINTAAN APPROVAL DELIVERABLE*\n\n"
+                f"📅 *Tanggal Upload:* {upload_date}\n"
+                f"✅ *Nama Deliverable:* {deliverable_name}\n"
+                f"📁 *Nama Project:* {project_name}\n"
+                f"📦 *Work Package:* {work_package_name}\n"
+                f"📄 *Nama Activity:* {activities_name}\n"
+                f"🆔 *ID Activity:* {id_activities}\n"
+                f"👤 *Diupload oleh:* {uploader_name}\n"
+                f"📎 *Link Informasi Activity:* {link_activities}\n"
+                f"📎 *Link Form Approval:* {link_approval}\n"
+            )
+            logger.info(f"Sending message for item ID: {item_id}")
+            send_to_telegram(tele_id, message)
+            add_to_sent_ids(item_id)
 
-        logger.info(f"⏳ Mengirim pesan untuk ID {id_kirim_deliverable} ke Telegram ID {tele_id}")
-        success = send_to_telegram(tele_id, message)
-
-        if success:
-            add_to_sent_ids(id_kirim_deliverable)
-        else:
-            logger.error(f"❌ Gagal mengirim pesan untuk ID {id_kirim_deliverable}")
-
-    logger.info("✅ Semua data selesai diproses.")
+    logger.info("Processing completed.")
     sys.exit(0)
 
 if __name__ == "__main__":
