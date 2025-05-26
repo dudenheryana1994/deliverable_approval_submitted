@@ -19,6 +19,12 @@ NOTION_API_KEY = os.getenv("NOTION_API_KEY")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 SENT_IDS_FILE = "id_sent.json"
 
+def add_dashes_to_uuid(uuid_str):
+    # Tambahkan strip ke UUID tanpa strip (32 char) menjadi format standar UUID
+    if uuid_str and len(uuid_str) == 32 and "-" not in uuid_str:
+        return f"{uuid_str[0:8]}-{uuid_str[8:12]}-{uuid_str[12:16]}-{uuid_str[16:20]}-{uuid_str[20:]}"
+    return uuid_str
+
 def get_notion_data():
     url = f"https://api.notion.com/v1/databases/{NOTION_DATABASE_ID}/query"
     headers = {
@@ -51,7 +57,9 @@ def send_to_telegram(chat_id, message):
 def read_sent_ids():
     if os.path.exists(SENT_IDS_FILE):
         with open(SENT_IDS_FILE, "r") as f:
-            return json.load(f)
+            raw_ids = json.load(f)
+            # Normalisasi semua ID jadi pakai format dengan strip
+            return [add_dashes_to_uuid(id_str.replace("-", "")) for id_str in raw_ids]
     return []
 
 def save_sent_ids(sent_ids):
@@ -87,16 +95,10 @@ def extract_date(prop):
     return "Tidak ada data"
 
 def add_to_sent_ids(new_id):
-    if os.path.exists(SENT_IDS_FILE):
-        with open(SENT_IDS_FILE, "r") as f:
-            sent_ids = json.load(f)
-    else:
-        sent_ids = []
-
+    sent_ids = read_sent_ids()
     if new_id not in sent_ids:
         sent_ids.append(new_id)
-        with open(SENT_IDS_FILE, "w") as f:
-            json.dump(sent_ids, f, indent=4)
+        save_sent_ids(sent_ids)
         logger.info(f"Added ID {new_id} to id_sent.json")
     else:
         logger.info(f"ID {new_id} already exists in id_sent.json")
@@ -117,8 +119,8 @@ def main():
     for item in results:
         properties = item.get("properties", {})
 
-        # Ambil ID Kirim Deliverable (format tanpa strip)
-        id_kirim_deliverable = extract_text(properties.get("ID Kirim Deliverable", {}).get("rich_text", []))
+        id_raw = extract_text(properties.get("ID Kirim Deliverable", {}).get("rich_text", []))
+        id_kirim_deliverable = add_dashes_to_uuid(id_raw)
         tele_id = extract_text(properties.get("ID Telegram (Us)", {}).get("rich_text", []))
 
         if id_kirim_deliverable not in sent_ids and tele_id not in [None, "", "Tidak ada data"]:
