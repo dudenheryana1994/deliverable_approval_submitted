@@ -87,17 +87,14 @@ def extract_date(prop):
     return "Tidak ada data"
 
 def add_to_sent_ids(new_id):
-    # Membaca file id_sent.json
     if os.path.exists(SENT_IDS_FILE):
         with open(SENT_IDS_FILE, "r") as f:
             sent_ids = json.load(f)
     else:
         sent_ids = []
 
-    # Menambahkan ID baru jika belum ada
     if new_id not in sent_ids:
         sent_ids.append(new_id)
-        # Menyimpan kembali perubahan ke file
         with open(SENT_IDS_FILE, "w") as f:
             json.dump(sent_ids, f, indent=4)
         logger.info(f"Added ID {new_id} to id_sent.json")
@@ -118,21 +115,23 @@ def main():
     sent_ids = read_sent_ids()
 
     for item in results:
-        item_id = item.get("id")
         properties = item.get("properties", {})
 
-        activities_name = extract_text(properties.get("Activities Name", {}).get("title", []))
-        deliverable_name = extract_text(properties.get("Deliverable Name", {}).get("rich_text", []))
-        link_activities = extract_formula(properties.get("Link Activities", {}))
-        link_approval = extract_formula(properties.get("Link Approval", {}))
-        project_name = extract_text(properties.get("Project Name", {}).get("rich_text", []), default="-")
-        work_package_name = extract_text(properties.get("Work Package Name", {}).get("rich_text", []))
-        id_activities = extract_text(properties.get("ID Activities", {}).get("rich_text", []))
-        uploader_name = extract_text(properties.get("Uploader.Name (As)", {}).get("rich_text", []))
-        upload_date = extract_date(properties.get("Upload.Date", {}))
+        # Ambil ID Kirim Deliverable (format tanpa strip)
+        id_kirim_deliverable = extract_text(properties.get("ID Kirim Deliverable", {}).get("rich_text", []))
         tele_id = extract_text(properties.get("ID Telegram (Us)", {}).get("rich_text", []))
 
-        if item_id not in sent_ids and tele_id not in [None, "", "Tidak ada data"]:
+        if id_kirim_deliverable not in sent_ids and tele_id not in [None, "", "Tidak ada data"]:
+            activities_name = extract_text(properties.get("Activities Name", {}).get("title", []))
+            deliverable_name = extract_text(properties.get("Deliverable Name", {}).get("rich_text", []))
+            link_activities = extract_formula(properties.get("Link Activities", {}))
+            link_approval = extract_formula(properties.get("Link Approval", {}))
+            project_name = extract_text(properties.get("Project Name", {}).get("rich_text", []), default="-")
+            work_package_name = extract_text(properties.get("Work Package Name", {}).get("rich_text", []))
+            id_activities = extract_text(properties.get("ID Activities", {}).get("rich_text", []))
+            uploader_name = extract_text(properties.get("Uploader.Name (As)", {}).get("rich_text", []))
+            upload_date = extract_date(properties.get("Upload.Date", {}))
+
             message = (
                 f"*PERMINTAAN APPROVAL DELIVERABLE*\n\n"
                 f"📅 *Tanggal Upload:* {upload_date}\n"
@@ -145,9 +144,9 @@ def main():
                 f"📎 *Link Informasi Activity:* {link_activities}\n"
                 f"📎 *Link Form Approval:* {link_approval}\n"
             )
-            logger.info(f"Sending message for item ID: {item_id}")
+            logger.info(f"Sending message for ID Kirim Deliverable: {id_kirim_deliverable}")
             send_to_telegram(tele_id, message)
-            add_to_sent_ids(item_id)
+            add_to_sent_ids(id_kirim_deliverable)
 
     logger.info("Processing completed.")
     sys.exit(0)
