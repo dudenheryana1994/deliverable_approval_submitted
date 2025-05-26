@@ -2,8 +2,8 @@ name: Run Notion to Telegram Service Cron
 
 on:
   schedule:
-    - cron: '*/2 * * * *' # Setiap 10 menit
-  workflow_dispatch: # Bisa dijalankan manual juga
+    - cron: '*/10 * * * *' # setiap 10 menit (sesuaikan)
+  workflow_dispatch:
 
 jobs:
   run-python-script:
@@ -36,10 +36,6 @@ jobs:
         echo "$ENV_VARS" > .env
 
     - name: Run Python script
-      env:
-        NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
-        NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
-        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       run: |
         python notion_to_telegram.py
 
