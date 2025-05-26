@@ -25,10 +25,9 @@ jobs:
         pip install python-dotenv
 
     - name: Pull latest id_sent.json from main branch
-    run: |
-      git fetch origin main
-      git checkout origin/main -- id_sent.json || echo "No existing id_sent.json"
-
+      run: |
+        git fetch origin main
+        git checkout origin/main -- id_sent.json || echo "No existing id_sent.json"
 
     - name: Create .env file from GitHub Secrets
       env:
