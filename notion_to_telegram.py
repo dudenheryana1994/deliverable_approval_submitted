@@ -1,5 +1,3 @@
-Github submitted 
-
 import requests
 import json
 import os
