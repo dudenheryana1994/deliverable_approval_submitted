@@ -24,9 +24,11 @@ jobs:
         pip install -r requirements.txt
         pip install python-dotenv
 
-    - name: Create id_sent.json if not exist
-      run: |
-        if [ ! -f id_sent.json ]; then echo "[]" > id_sent.json; fi
+    - name: Pull latest id_sent.json from main branch
+    run: |
+      git fetch origin main
+      git checkout origin/main -- id_sent.json || echo "No existing id_sent.json"
+
 
     - name: Create .env file from GitHub Secrets
       env:
