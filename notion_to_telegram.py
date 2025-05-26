@@ -118,8 +118,10 @@ def main():
     sent_ids = read_sent_ids()
 
     for item in results:
-        item_id = item.get("id")
+        #item_id = item.get("id")
         properties = item.get("properties", {})
+
+        item_id = extract_text(properties.get("ID Kirim Deliverable", {}).get("rich_text", []))
 
         activities_name = extract_text(properties.get("Activities Name", {}).get("title", []))
         deliverable_name = extract_text(properties.get("Deliverable Name", {}).get("rich_text", []))
